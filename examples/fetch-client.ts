@@ -2,7 +2,7 @@
  * Bila UiTM Cuti API — minimal TypeScript client (fetch-based).
  * No dependencies. Works in Node 18+, Cloudflare Workers, browsers.
  *
- * See ../references/api-reference.md for full field docs.
+ * See ../skills/bilauitmcuti-api/references/api-reference.md for full field docs.
  */
 
 const BASE_URL = "https://api.bilauitmcuti.com";

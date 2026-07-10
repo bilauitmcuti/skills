@@ -3,7 +3,7 @@
  * signature for discord.js) that answers "is there class today?" using
  * the Bila UiTM Cuti API. Designed to run on Cloudflare Workers.
  *
- * See ../references/api-reference.md for full field docs.
+ * See ../skills/bilauitmcuti-api/references/api-reference.md for full field docs.
  */
 
 const BASE_URL = "https://api.bilauitmcuti.com";

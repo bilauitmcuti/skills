@@ -6,7 +6,7 @@
  *   -> proxies https://api.bilauitmcuti.com/api/v1/today
  *
  * Fits a Next.js-on-Cloudflare-Pages + Workers + D1/KV stack.
- * See ../references/api-reference.md for full field docs.
+ * See ../skills/bilauitmcuti-api/references/api-reference.md for full field docs.
  */
 
 export interface Env {

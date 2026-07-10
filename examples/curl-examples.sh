@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Bila UiTM Cuti API - curl cookbook.
 # Run any block individually to sanity-check the API before wiring up code.
-# See ../references/api-reference.md for full field docs.
+# See ../skills/bilauitmcuti-api/references/api-reference.md for full field docs.
 
 BASE="https://api.bilauitmcuti.com"
 

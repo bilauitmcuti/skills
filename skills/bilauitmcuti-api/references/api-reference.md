@@ -25,7 +25,7 @@ Source of truth: `https://api.bilauitmcuti.com/api/openapi.json` (OpenAPI 3 spec
 
 - Boolean-ish query params (`all`, `allSessions`) accept `"true"`, `"1"`, or `"yes"`.
 - `group` is always `"A"` or `"B"` (UiTM Group A / Group B academic schedules).
-- Session IDs follow the pattern `<Group>-<sessionCode>`, e.g. `A-20251`, `B-20263`. Always source these from `/api/v1/meta`, never hardcode/guess.
+- Session IDs follow the pattern `<Group>-<sessionCode>`, e.g. `A-20251`, `B-20263`. Session IDs are returned by `GET /api/v1/meta`; do not hardcode or guess them.
 - State/territory filters for holidays are lowercase slugs, not display labels.
 
 ---
@@ -232,7 +232,7 @@ curl -sS "https://api.bilauitmcuti.com/api/v1/public-holiday?year=2026&state=sel
 | `404` | Missing calendar/lecture-week session bucket (`/api/v1/calendar`, `/api/v1/lecture-weeks` only). |
 | `429` | Rate limited. Respect the `Retry-After` header and back off. |
 
-Always check `response.ok` / status code before parsing JSON — don't assume every response is a `200`.
+Non-2xx responses should be handled before parsing JSON — don't assume every response is a `200`.
 
 ## Rate limits & caching
 

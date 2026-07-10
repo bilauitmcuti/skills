@@ -2,7 +2,7 @@
 Bila UiTM Cuti API - minimal Python client.
 Dependency: requests (pip install requests)
 
-See ../references/api-reference.md for full field docs.
+See ../skills/bilauitmcuti-api/references/api-reference.md for full field docs.
 """
 
 from __future__ import annotations
