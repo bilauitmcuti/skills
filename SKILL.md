@@ -20,7 +20,7 @@ Human docs: `https://api.bilauitmcuti.com/docs`
 
 - **This file (SKILL.md)** — quick orientation, the 4 endpoints at a glance, the standard call sequence, and common gotchas. Read this first, always.
 - **`references/api-reference.md`** — full endpoint reference: every query param, every response field, with types and examples. Read this before writing any non-trivial integration code, or when you need exact field names for parsing a response.
-- **`examples/`** — copy-paste-ready working code. Read the file matching the stack you're using (`fetch-client.ts`, `python-client.py`, `curl-examples.sh`, `cloudflare-worker-route.ts`, `discord-bot-command.ts`). Adapt rather than reinvent.
+- **`examples/`** — copy-paste-ready working code. Read the file matching the stack you're using (`fetch-client.ts`, `python-client.py`, `curl-examples.sh`, `cloudflare-worker-route.ts`, `bot-command.ts`). Adapt rather than reinvent.
 
 ## At a glance
 
