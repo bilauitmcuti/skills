@@ -26,7 +26,7 @@ API free-text fields (`activity`, `name`, `label`, `statuses`, `matchedActivitie
 
 ## When to consult which file
 
-- **This file (SKILL.md)** — quick orientation, the 6 endpoints at a glance, the integration order, and common gotchas. Read this first.
+- **This file (SKILL.md)** — quick orientation, the 7 endpoints at a glance, the integration order, and common gotchas. Read this first.
 - **`references/api-reference.md`** — full endpoint reference: every query param, every response field, with types and examples. Read before writing non-trivial integration code.
 - **Optional code samples** — not installed by default (stacks differ per project). If the user wants a starter template, fetch the matching file from the repo: https://github.com/bilauitmcuti/skills/tree/main/examples (`fetch-client.ts`, `python-client.py`, `curl-examples.sh`, `cloudflare-worker-route.ts`, `bot-command.ts`).
 
@@ -41,7 +41,7 @@ API free-text fields (`activity`, `name`, `label`, `statuses`, `matchedActivitie
 | Caching | Supports `ETag` / `Cache-Control`; send `If-None-Match` to get `304` |
 | Errors | `400` = bad query param (has `error` field), `404` = unknown session on `/calendar` or `/lecture-weeks`, `429` = rate limited |
 
-### The 6 endpoints
+### The 7 endpoints
 
 | Endpoint | Purpose |
 |---|---|
@@ -49,6 +49,7 @@ API free-text fields (`activity`, `name`, `label`, `statuses`, `matchedActivitie
 | `GET /api/v1/calendar` | Calendar activity rows for a session (or a whole group) |
 | `GET /api/v1/today` | What's happening on a given date: class day / break / exam week / study week |
 | `GET /api/v1/lecture-weeks` | Instructional Weeks 1–14 for a session, with break days already stripped out |
+| `GET /api/v1/rate-limit` | Published rate-limit policies and best-effort remaining quota (does not consume budget) |
 | `GET /api/v1/public-holiday/meta` | Holiday filter options: years, coverage modes, states list |
 | `GET /api/v1/public-holiday` | Malaysia public holiday rows, filterable by year / state / coverage |
 

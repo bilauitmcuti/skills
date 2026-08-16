@@ -25,7 +25,7 @@ Source of truth: `https://api.bilauitmcuti.com/api/openapi.json` (OpenAPI 3 spec
 
 - Boolean-ish query params (`all`, `allSessions`) accept `"true"`, `"1"`, or `"yes"`.
 - `group` is always `"A"` or `"B"` (UiTM Group A / Group B academic schedules).
-- Session IDs follow the pattern `<Group>-<sessionCode>`, e.g. `A-20251`, `B-20263`. Session IDs are returned by `GET /api/v1/meta`; do not hardcode or guess them.
+- Session IDs follow the pattern `<Group>-<sessionCode>`, e.g. `A-20251`, `B-20264`. Session IDs are returned by `GET /api/v1/meta`; do not hardcode or guess them.
 - State/territory filters for holidays are lowercase slugs, not display labels.
 
 ---
@@ -96,7 +96,7 @@ Calendar activity rows for one session, or aggregated across a group.
 **Example**
 
 ```bash
-curl -sS "https://api.bilauitmcuti.com/api/v1/calendar?session=B-20263&group=B&program=Diploma&type=break"
+curl -sS "https://api.bilauitmcuti.com/api/v1/calendar?session=B-20264&group=B&program=Diploma&type=break"
 ```
 
 **404 case**: an unknown/missing `session` bucket returns `404`.
@@ -131,7 +131,7 @@ What's happening on a given date: class day, break, exam week, or study week.
 **Example**
 
 ```bash
-curl -sS "https://api.bilauitmcuti.com/api/v1/today?group=B&date=2026-03-09&session=B-20263&program=Diploma"
+curl -sS "https://api.bilauitmcuti.com/api/v1/today?group=B&date=2026-03-09&session=B-20264&program=Diploma"
 ```
 
 ---
@@ -159,7 +159,7 @@ Up to 14 instructional weeks for a session. Each week is a Mon–Sun slot with *
 **Example**
 
 ```bash
-curl -sS "https://api.bilauitmcuti.com/api/v1/lecture-weeks?session=B-20263"
+curl -sS "https://api.bilauitmcuti.com/api/v1/lecture-weeks?session=B-20264"
 ```
 
 **404 case**: unknown `session` returns `404`.
@@ -236,6 +236,40 @@ Non-2xx responses should be handled before parsing JSON — don't assume every r
 
 ## Rate limits & caching
 
+- Production policy: **500 requests per 60s per IP per endpoint**; a separate **`heavy` bucket** (60 per 60s) applies to heavy `/meta` and `/calendar` modes (e.g. `all=true`). `GET /api/health` is excluded from rate limiting.
 - Rate limits are applied per-IP when configured. Expect `429` with a `Retry-After` header under heavy polling.
+- All responses include rate-limit headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, `RateLimit-Policy`, and `RateLimit` (RFC 9457). Remaining counts are approximate (best-effort per worker isolate).
 - Responses support `ETag` + `Cache-Control`. Send `If-None-Match: <etag>` on repeat requests to get a `304 Not Modified` (no body) and avoid unnecessary payload transfer — especially useful for cron jobs, Discord/Telegram bots, or Workers routes that poll on a schedule.
 - This is a free, hobby-scale, unofficial API — build in caching and backoff rather than polling aggressively.
+
+### `GET /api/v1/rate-limit`
+
+Rate limit status. Returns published rate-limit policies and best-effort remaining quota for the caller. **Does not consume rate-limit budget.**
+
+**Query parameters**
+
+| Name | Type | Description |
+|---|---|---|
+| `pathname` | string | API path to inspect (must start with `/`, e.g. `/api/v1/calendar`). Defaults to `/api/v1/rate-limit`. |
+| `heavy` | string | When `true`/`1`/`yes`, response highlights the `heavy` bucket alongside the endpoint policy. |
+
+**Response fields**
+
+| Field | Type | Description |
+|---|---|---|
+| `apiVersion` / `baseUrl` | string | As above. |
+| `enforcement` | string | Rate-limit enforcement mode. |
+| `pathname` | string | Inspected API path. |
+| `heavyMode` | boolean | Whether the heavy bucket is included in the primary view. |
+| `policies` | object[] | `{ name, limit, period, appliesWhen? }[]` — published buckets (`endpoint`: 500/60s; `heavy`: 60/60s for heavy calendar/meta modes). |
+| `endpoint` | object | Endpoint bucket snapshot: `{ name, limit, period, remaining?, reset, retryAfter }`. |
+| `heavy` | object | Heavy bucket snapshot (same shape). |
+
+**Example**
+
+```bash
+curl -sS "https://api.bilauitmcuti.com/api/v1/rate-limit"
+curl -sS "https://api.bilauitmcuti.com/api/v1/rate-limit?pathname=/api/v1/calendar&heavy=true"
+```
+
+Use this endpoint to check remaining quota before aggressive polling — it does not decrement the rate-limit counter.
