@@ -3,7 +3,7 @@
 Base URL: `https://api.bilauitmcuti.com`
 All endpoints below are relative to that base URL. All methods are `GET`. No authentication required.
 
-Source of truth: `https://api.bilauitmcuti.com/api/openapi.json` (OpenAPI 3 spec — import into Postman/Insomnia/Hoppscotch, or generate a typed client with [OpenAPI Generator](https://openapi-generator.tech/docs/installation)). Human-readable docs: `https://api.bilauitmcuti.com/docs`.
+Source of truth: `https://api.bilauitmcuti.com/api/openapi.json` (OpenAPI 3 spec — import into Postman/Insomnia/Hoppscotch, or generate a typed client with [OpenAPI Generator](https://openapi-generator.tech/docs/installation)). Human-readable docs: `https://docs.bilauitmcuti.com`. MCP server: `https://mcp.bilauitmcuti.com/mcp`.
 
 ## Table of contents
 
@@ -16,8 +16,12 @@ Source of truth: `https://api.bilauitmcuti.com/api/openapi.json` (OpenAPI 3 spec
 - [Malaysia Public Holiday](#malaysia-public-holiday)
   - [`GET /api/v1/public-holiday/meta`](#get-apiv1public-holidaymeta)
   - [`GET /api/v1/public-holiday`](#get-apiv1public-holiday)
+- [System](#system)
+  - [`GET /api/v1/rate-limit`](#get-apiv1rate-limit)
+  - [`GET /api/health`](#get-apihealth)
 - [Errors](#errors)
 - [Rate limits & caching](#rate-limits--caching)
+- [MCP server](#mcp-server)
 
 ---
 
@@ -51,7 +55,7 @@ Sessions & programs (meta). Returns session and program options used by calendar
 | `baseUrl` | string | `https://api.bilauitmcuti.com` |
 | `all` | boolean | Present when `all=true` was requested. |
 | `defaultSession` | object \| string | When `all=true`: `{ "A": "<sessionId>", "B": "<sessionId>" }`. When `group=A\|B`: a single session id string for that group (e.g. `"B-20264"`). |
-| `sessionOptions` | object[] | `{ id, label, group }[]`, e.g. `{ "id": "A-20251", "label": "Sesi 1 2025", "group": "A" }` |
+| `sessionOptions` | object[] | `{ id, label, group }[]`, e.g. `{ "id": "A-20264", "label": "Jun 2026 - Oct 2026", "group": "A" }` |
 | `programOptions` | object[] | `{ label, value, group }[]`, e.g. `{ "label": "Diploma", "value": "Diploma", "group": "B" }` |
 
 **Example**
@@ -90,7 +94,7 @@ Calendar activity rows for one session, or aggregated across a group.
 | `group` | string | Resolved group key for grouped responses. |
 | `session` | object | Resolved session metadata for single-session responses. |
 | `filters` | object | Applied filters echoed back, e.g. `{ "program": "Diploma", "type": "break" }` |
-| `activities` | array | Rows, e.g. `{ "week": 1, "activity": "Lecture Week", "type": "lecture" }` |
+| `activities` | array | Rows, e.g. `{ "name": "Lecture 1", "startDate": "2026-06-15", "endDate": "2026-08-02", "duration": "7 Minggu", "type": "lecture", "group": "A" }` |
 | `meta` | object | Counters, e.g. `{ "totalInSession": 48, "returned": 12 }` |
 
 **Example**
@@ -138,7 +142,7 @@ curl -sS "https://api.bilauitmcuti.com/api/v1/today?group=B&date=2026-03-09&sess
 
 ### `GET /api/v1/lecture-weeks`
 
-Up to 14 instructional weeks for a session. Each week is a Mon–Sun slot with **break days already removed** from `days`; weeks that are entirely break are skipped from the response.
+Up to 14 instructional weeks for a session. Each week is a Mon–Sun slot with **break days already removed** from `days`; weeks with no lecture days (or all break) are skipped. `weekStart` / `weekEnd` are the first and last listed instructional day. Weekday and month names are English.
 
 **Query parameters**
 
@@ -224,23 +228,7 @@ curl -sS "https://api.bilauitmcuti.com/api/v1/public-holiday?year=2026&state=sel
 
 ---
 
-## Errors
-
-| Status | Meaning |
-|---|---|
-| `400` | Invalid query parameter. Body includes an `error` field describing what's wrong. |
-| `404` | Missing calendar/lecture-week session bucket (`/api/v1/calendar`, `/api/v1/lecture-weeks` only). |
-| `429` | Rate limited. Respect the `Retry-After` header and back off. |
-
-Non-2xx responses should be handled before parsing JSON — don't assume every response is a `200`.
-
-## Rate limits & caching
-
-- Production policy: **500 requests per 60s per IP per endpoint**; a separate **`heavy` bucket** (60 per 60s) applies to heavy `/meta` and `/calendar` modes (e.g. `all=true`). `GET /api/health` is excluded from rate limiting.
-- Rate limits are applied per-IP when configured. Expect `429` with a `Retry-After` header under heavy polling.
-- All responses include rate-limit headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, `RateLimit-Policy`, and `RateLimit` (RFC 9457). Remaining counts are approximate (best-effort per worker isolate).
-- Responses support `ETag` + `Cache-Control`. Send `If-None-Match: <etag>` on repeat requests to get a `304 Not Modified` (no body) and avoid unnecessary payload transfer — especially useful for cron jobs, Discord/Telegram bots, or Workers routes that poll on a schedule.
-- This is a free, hobby-scale, unofficial API — build in caching and backoff rather than polling aggressively.
+## System
 
 ### `GET /api/v1/rate-limit`
 
@@ -273,3 +261,65 @@ curl -sS "https://api.bilauitmcuti.com/api/v1/rate-limit?pathname=/api/v1/calend
 ```
 
 Use this endpoint to check remaining quota before aggressive polling — it does not decrement the rate-limit counter.
+
+---
+
+### `GET /api/health`
+
+Uptime check. Not rate limited — safe for monitors. (The MCP server has its own `GET /mcp/health`.)
+
+```bash
+curl -sS "https://api.bilauitmcuti.com/api/health"
+```
+
+---
+
+## Errors
+
+| Status | Meaning |
+|---|---|
+| `400` | Invalid query parameter. Body includes an `error` field describing what's wrong. |
+| `404` | Missing calendar/lecture-week session bucket (`/api/v1/calendar`, `/api/v1/lecture-weeks` only). |
+| `429` | Rate limited. Respect the `Retry-After` header (also JSON `retryAfter`) and back off. |
+
+Non-2xx responses should be handled before parsing JSON — don't assume every response is a `200`.
+
+## Rate limits & caching
+
+- Production policy (Cloudflare Workers Rate Limiting, per edge location): **500 requests per 60s per IP per endpoint path**; a separate **`heavy` bucket** (60 per 60s) applies when `all=true` on `/meta` or `/calendar`, or `allSessions=true` on `/calendar`. `GET /api/health` and `GET /mcp/health` are excluded.
+- Cacheable successful responses include `RateLimit-Policy` only (per-client remaining is omitted so shared caches cannot replay another client's quota).
+- `429` responses include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, `RateLimit`, `RateLimit-Policy`, and a window-aligned `Retry-After` header plus JSON `retryAfter`. Remaining counts are approximate (per worker isolate).
+- For a best-effort remaining peek, call `GET /api/v1/rate-limit` (see [System](#system)).
+- Responses support `ETag` + `Cache-Control`. Send `If-None-Match: <etag>` on repeat requests to get a `304 Not Modified` (no body) and avoid unnecessary payload transfer — especially useful for cron jobs, Discord/Telegram bots, or Workers routes that poll on a schedule.
+- This is a free, hobby-scale, unofficial API — build in caching and backoff rather than polling aggressively.
+
+## MCP server
+
+Hosted, read-only, no auth. Streamable HTTP at `https://mcp.bilauitmcuti.com/mcp`. Each tool issues a `GET` to the REST API and shares its rate limits.
+
+| Tool | Endpoint |
+|---|---|
+| `get_academic_meta` | `GET /api/v1/meta` |
+| `get_calendar` | `GET /api/v1/calendar` (also `limit`, `compact`) |
+| `get_today_status` | `GET /api/v1/today` (`group` required) |
+| `get_lecture_weeks` | `GET /api/v1/lecture-weeks` |
+| `get_public_holiday_meta` | `GET /api/v1/public-holiday/meta` |
+| `get_public_holidays` | `GET /api/v1/public-holiday` (also `limit`, `compact`) |
+
+Boolean flags accept real booleans. Results include a text block (stringified JSON) and `structuredContent`.
+
+```json
+{ "jsonrpc": "2.0", "id": 2, "method": "tools/call",
+  "params": { "name": "get_today_status", "arguments": { "group": "B", "date": "2026-03-09" } } }
+```
+
+Verify:
+
+```bash
+curl -s -X POST 'https://mcp.bilauitmcuti.com/mcp' \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+A bare `GET /mcp` returns `405` (expected). Client configs: https://docs.bilauitmcuti.com/mcp-server

@@ -9,9 +9,10 @@ Correct base URL, query params, and response shape — instead of guessing endpo
 
 The API: unofficial, read-only, no-auth REST API for UiTM academic calendar data (Group A / Group B sessions, calendar activities, "today's status", lecture weeks 1–14) and Malaysia public holiday data.
 
-- Live docs: https://api.bilauitmcuti.com/docs
+- Live docs: https://docs.bilauitmcuti.com
 - OpenAPI spec: https://api.bilauitmcuti.com/api/openapi.json
 - Base URL: `https://api.bilauitmcuti.com`
+- MCP server (read-only, no auth): `https://mcp.bilauitmcuti.com/mcp`
 
 **Author:** [bilauitmcuti](https://github.com/bilauitmcuti) · **Version:** 1.0.0
 
@@ -72,6 +73,16 @@ Or shorter:
 Set up the bilauitmcuti-api skill from github.com/bilauitmcuti/skills using npx skills
 ```
 
+### Or connect the MCP server (no install)
+
+Agents that support MCP can query the data directly. Add to `.cursor/mcp.json` (other clients: [docs](https://docs.bilauitmcuti.com/mcp-server)):
+
+```json
+{ "mcpServers": { "bilauitmcuti": { "url": "https://mcp.bilauitmcuti.com/mcp" } } }
+```
+
+Tools: `get_academic_meta`, `get_calendar`, `get_today_status`, `get_lecture_weeks`, `get_public_holiday_meta`, `get_public_holidays`. Use the skill when writing integration code; use MCP to answer questions.
+
 ### Where files go
 
 | Agent | Project path | Global path (`-g`) |
@@ -121,7 +132,7 @@ Check for updates without installing:
 npx skills check
 ```
 
-**Maintainers:** If the API adds endpoints or changes fields, re-fetch `https://api.bilauitmcuti.com/api/openapi.json` and `https://api.bilauitmcuti.com/docs`, then update `skills/bilauitmcuti-api/references/api-reference.md` (source of truth for fields/params) and adjust `skills/bilauitmcuti-api/SKILL.md`'s endpoint table and gotchas if behavior changed. Keep `SKILL.md` itself short — push detail into `references/`.
+**Maintainers:** If the API adds endpoints or changes fields, re-fetch `https://api.bilauitmcuti.com/api/openapi.json` and the docs pages at `https://docs.bilauitmcuti.com` (`/getting-started`, `/academic-calendar`, `/public-holidays`, `/mcp-server`, `/openapi-specification`), then update `skills/bilauitmcuti-api/references/api-reference.md` (source of truth for fields/params) and adjust `skills/bilauitmcuti-api/SKILL.md`'s endpoint table and gotchas if behavior changed. Keep `SKILL.md` itself short — push detail into `references/`.
 
 ---
 
@@ -209,8 +220,10 @@ Reference files load on demand during integration work. Examples are opt-in — 
 |---------|-----------|
 | Academic calendar | `GET /api/v1/meta`, `/calendar`, `/today`, `/lecture-weeks` |
 | Public holidays | `GET /api/v1/public-holiday/meta`, `/public-holiday` |
+| System | `GET /api/v1/rate-limit`, `GET /api/health` |
+| MCP (no install) | `https://mcp.bilauitmcuti.com/mcp` — 6 read-only tools |
 
-**The 6 endpoints (summary)**
+**The 8 endpoints (summary)**
 
 | Endpoint | What it returns |
 |---|---|
@@ -220,6 +233,8 @@ Reference files load on demand during integration work. Examples are opt-in — 
 | `GET /api/v1/lecture-weeks` | Clean Weeks 1–14 schedule, break days stripped |
 | `GET /api/v1/public-holiday/meta` | Holiday filter options (years, coverage, state slugs) |
 | `GET /api/v1/public-holiday` | Malaysia public holiday rows |
+| `GET /api/v1/rate-limit` | Published rate-limit policies + best-effort remaining quota (free) |
+| `GET /api/health` | Uptime check, not rate limited |
 
 Full param/field docs live in `skills/bilauitmcuti-api/references/api-reference.md` (installed to `references/api-reference.md` inside the skill folder).
 
@@ -240,7 +255,7 @@ Full param/field docs live in `skills/bilauitmcuti-api/references/api-reference.
 - `program` filtering mostly matters for Group B
 - `/lecture-weeks` already strips break days — don't double-filter by `type`
 - State filters for holidays are lowercase slugs (`kuala-lumpur`, not `Kuala Lumpur`)
-- The API is unauthenticated but not unlimited — use ETag caching and `Retry-After` backoff for bots/cron jobs
+- The API is unauthenticated but not unlimited — 500 req/60s per endpoint path; `all=true` / `allSessions=true` also hit a heavy bucket (60/60s). Use ETag caching and `Retry-After` backoff for bots/cron jobs
 - This is unofficial data, not affiliated with UiTM — verify important dates before relying on them
 
 ---

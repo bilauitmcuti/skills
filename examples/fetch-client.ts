@@ -31,9 +31,12 @@ export interface MetaResponse {
 }
 
 export interface CalendarActivity {
-  week?: number;
-  activity?: string;
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+  duration?: string;
   type?: string;
+  group?: Group;
   [key: string]: unknown;
 }
 
